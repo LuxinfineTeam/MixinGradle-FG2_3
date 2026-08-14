@@ -16,8 +16,8 @@ apply plugin: "com.gradle.plugin-publish"
 
 defaultTasks 'build'
 
-group = 'org.spongepowered'
-version = buildVersion + (buildType == 'RELEASE' ? '' : "-$buildType")
+group = project.hasProperty('group') ? project.group : 'org.spongepowered'
+version = project.hasProperty('version') ? project.version : (buildVersion + (buildType == 'RELEASE' ? '' : "-$buildType"))
 base {
     archivesName = "mixingradle"
 }

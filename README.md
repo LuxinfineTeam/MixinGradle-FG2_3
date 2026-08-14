@@ -1,96 +1,67 @@
-![MixinGradle Logo](docs/logo.png?raw=true)
+# MixinGradle 0.6 extended
+Это форк проекта https://github.com/SpongePowered/MixinGradle (ветка 0.6)
+Плагин расчитан на использование в связке с https://github.com/LuxinfineTeam/ForgeGradle-2_3
 
-**MixinGradle** is a [Gradle](http://gradle.org/) plugin which simplifies the build-time complexity of working with the **[SpongePowered Mixin](/SpongePowered/Mixin)** framework for Java. It currently only supports usage with **[ForgeGradle](MinecraftForge/ForgeGradle)**.
+### Список изменений:
+- Поддержка запуска gradle на JDK 17-21
+- Подгрузка main/resources в класспаз runClient и runServer конфигураций, чтобы миксины загружали mixins.modid.json файлы в IDE
 
-### Features
-
-**MixinGradle** automates the following tasks:
-
-* Locating (via **ForgeGradle**) and supplying input SRG files to the [Mixin](/SpongePowered/Mixin) [Annotation Processor](https://github.com/SpongePowered/Mixin/wiki/Using-the-Mixin-Annotation-Processor)
-* Providing processing options to the [Annotation Processor](https://github.com/SpongePowered/Mixin/wiki/Using-the-Mixin-Annotation-Processor)
-* Contributing the generated [reference map (refmap)](https://github.com/SpongePowered/Mixin/wiki/Introduction-to-Mixins---Obfuscation-and-Mixins#511-the-mixin-reference-map-refmap) to the corresponding sourceSet compile task outputs
-* Contributing the generated SRG files to appropriate **ForgeGradle** `reobf` tasks
-
-### Using MixinGradle
-
-To use **MixinGradle** you *must* be using **[ForgeGradle](MinecraftForge/ForgeGradle)**. To configure the plugin for your build:
-
-1. Add a source repository to your `buildScript -> dependencies` block:
-
- ```groovy
+### Пример подключения плагина совместно с FG 2.3:
+```groovy
 buildscript {
-        repositories {
-            <add source repository here>
+    repositories {
+        maven { url 'https://jitpack.io' }
+        maven {
+            name 'forge'
+            url 'https://maven.minecraftforge.net'
         }
-        dependencies {
-            ...
-            classpath 'org.spongepowered:mixingradle:0.5-SNAPSHOT'
+    }
+    dependencies {
+        classpath('com.github.LuxinfineTeam:ForgeGradle-2_3:main-SNAPSHOT') {
+            changing = true
         }
+        classpath('com.github.LuxinfineTeam:MixinGradle-FG2_3:main-SNAPSHOT')
+    }
 }
- ```
-2. Apply the plugin:
- 
- ```groovy
- apply plugin: 'org.spongepowered.mixin'
- ```
- 
-3. Create your `mixin` block, specify which sourceSets to process and provide refmap resource names for each one, the generated refmap will be added to the compiler task outputs automatically.
- 
- ```groovy
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'org.spongepowered.mixin'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+version = "1.0"
+base {
+    archivesName = "MyModName"
+}
+
+repositories {
+    maven {
+        name = 'sponge-repo'
+        url = 'https://repo.spongepowered.org/repository/maven-public/'
+    }
+    mavenCentral()
+}
+
+minecraft {
+    version = "1.12.2-14.23.5.2859"
+    mappings = "stable_39"
+}
+
+dependencies {
+    implementation 'org.spongepowered:mixin:0.8.7'
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+}
+
 mixin {
-        add sourceSets.main, "main.refmap.json"
-        add sourceSets.another, "another.refmap.json"
+    add sourceSets.main, "mixins.modid.refmap.json"
 }
- ```
-  
-4. Alternatively, you can simply specify the `ext.refMap` property directly on your sourceSet:
- 
- ```groovy
-sourceSets {
-        main {
-            ext.refMap = "main.refmap.json"
-        }
-        another {
-            ext.refMap = "another.refmap.json"
-        }
-}
- ```
- 
-5. You can define other mixin AP options in the `mixin` block, for example `disableTargetValidator` and `disableTargetExport` can be configured either by setting them as boolean properties:
- 
- ```groovy
- mixin {
-        disableTargetExport = true
-        disableTargetValidator = true
- }
- ```
- 
- or simply issuing them as directives:
- 
- ```groovy
- mixin {
-        disableTargetExport
-        disableTargetValidator
- }
- ```
- 
- You can also set the default obfuscation environment for generated refmaps, this is the obfuscation environment which will be contributed to the refmap's `mappings` node:
- 
- ```groovy
- mixin {
-        // Specify "notch" or "searge" here
-        defaultObfuscationEnv notch
- }
- ```
- 
-### Building MixinGradle
-**MixinGradle** can of course be built using [Gradle](http://gradle.org/). To perform a build simply execute:
+```
 
-    gradle
-
-To add the compiled jar to your local maven repository, run:
-
-    gradle build install
-
-
-
+### Требования
+- Gradle 7.0+
+- JDK 17-21 для запуска gradle
