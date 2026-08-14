@@ -49,7 +49,12 @@ repositories {
 
 minecraft {
     version = "1.12.2-14.23.5.2859"
+    runDir = "run"
     mappings = "stable_39"
+    makeObfSourceJar = false
+    replace '@VERSION@', version
+    
+    clientRunArgs = ['--tweakClass', 'org.spongepowered.asm.launch.MixinTweaker']
 }
 
 dependencies {
