@@ -35,7 +35,7 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
-import org.gradle.api.internal.file.collections.SimpleFileCollection
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.compile.JavaCompile
@@ -215,11 +215,14 @@ public class MixinExtension {
             }
 
             // Search for upstream projects and add our jars to their target set
-            project.configurations.compile.allDependencies.withType(ProjectDependency) { upstream ->
-                def mixinExt = upstream.dependencyProject.extensions.findByName("mixin")
-                if (mixinExt) {
-                    project.reobf.each { reobfTaskWrapper ->
-                        mixinExt.reobfTasks += new ReobfTask(project, reobfTaskWrapper)
+            def compileConfig = project.configurations.findByName('compile') ?: project.configurations.findByName('implementation')
+            if (compileConfig) {
+                compileConfig.allDependencies.withType(ProjectDependency) { upstream ->
+                    def mixinExt = upstream.dependencyProject.extensions.findByName("mixin")
+                    if (mixinExt) {
+                        project.reobf.each { reobfTaskWrapper ->
+                            mixinExt.reobfTasks += new ReobfTask(project, reobfTaskWrapper)
+                        }
                     }
                 }
             }
@@ -238,7 +241,7 @@ public class MixinExtension {
         
         AbstractArchiveTask.metaClass.getRefMaps = {
             if (!delegate.ext.has('refMaps')) {
-                delegate.ext.refMaps = new SimpleFileCollection()
+                delegate.ext.refMaps = project.files()
             }
             delegate.ext.refMaps
         }

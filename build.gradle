@@ -5,18 +5,16 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0'
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
     }
 }
 
 apply plugin: 'groovy'
-apply plugin: 'license'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'eclipse'
 apply plugin: "com.gradle.plugin-publish"
 
-defaultTasks 'licenseFormat', 'build'
+defaultTasks 'build'
 
 group = 'org.spongepowered'
 version = buildVersion + (buildType == 'RELEASE' ? '' : "-$buildType")
@@ -28,35 +26,14 @@ repositories {
     mavenCentral()
 }
 
-configurations {
-    deployerJars
-}
-
 dependencies {
-    compile gradleApi()
-    compile 'com.google.guava:guava:17.0'
-    compile 'org.ow2.asm:asm-debug-all:5.0.3'
-    deployerJars 'org.apache.maven.wagon:wagon-ftp:2.7'
+    implementation gradleApi()
+    implementation 'com.google.guava:guava:17.0'
+    implementation 'org.ow2.asm:asm-debug-all:5.0.3'
 }
 
 processResources {
    from 'LICENSE.txt'
-}
-
-license {
-    ext {
-        name = project.name
-        organization = project.organization
-        url = project.url
-    }
-    include '**/*.groovy'
-    header file("HEADER.txt")
-    sourceSets = project.sourceSets
-    ignoreFailures false
-    strictCheck true
-    mapping {
-        java = 'SLASHSTAR_STYLE'
-    }
 }
 
 jar.manifest.mainAttributes (
@@ -68,7 +45,7 @@ jar.manifest.mainAttributes (
 
 task groovydocJar(type: Jar, dependsOn: groovydoc) {
     from groovydoc.destinationDir
-    classifier = 'groovydoc'
+    archiveClassifier = 'groovydoc'
 }
 
 artifacts {
@@ -89,47 +66,51 @@ pluginBundle {
     }
 }
 
-uploadArchives {
-    repositories {
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact groovydocJar
 
-        mavenDeployer {
-            configuration = configurations.deployerJars
-
-            if (project.hasProperty("chRepo"))
-            {
-                repository(url: project.chRepo) {
-                    authentication(userName: project.chUsername, password: project.chPassword)
-                }
-            }
+            groupId = project.group
+            artifactId = project.archivesBaseName
+            version = project.version
 
             pom {
-                groupId = project.group
-                version = project.version
-                artifactId = project.archivesBaseName
-                project {
-                    name project.archivesBaseName
-                    packaging 'jar'
-                    description 'MixinGradle'
-                    url 'http://www.spongepowered.org/'
+                name = project.archivesBaseName
+                packaging = 'jar'
+                description = 'MixinGradle'
+                url = 'http://www.spongepowered.org/'
 
-                    scm {
-                        url 'https://github.com/SpongePowered/MixinGradle'
-                        connection 'scm:git:git://github.com/SpongePowered/MixinGradle.git'
-                        developerConnection 'scm:git:git@github.com:SpongePowered/MixinGradle.git'
-                    }
+                scm {
+                    url = 'https://github.com/SpongePowered/MixinGradle'
+                    connection = 'scm:git:git://github.com/SpongePowered/MixinGradle.git'
+                    developerConnection = 'scm:git:git@github.com:SpongePowered/MixinGradle.git'
+                }
 
-                    issueManagement {
-                        system 'GitHub Issues'
-                        url 'https://github.com/SpongePowered/MixinGradle/issues'
-                    }
+                issueManagement {
+                    system = 'GitHub Issues'
+                    url = 'https://github.com/SpongePowered/MixinGradle/issues'
+                }
 
-                    licenses {
-                        license {
-                            name 'MIT license'
-                            url 'http://opensource.org/licenses/MIT'
-                            distribution 'repo'
-                        }
+                licenses {
+                    license {
+                        name = 'MIT license'
+                        url = 'http://opensource.org/licenses/MIT'
+                        distribution = 'repo'
                     }
+                }
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+        if (project.hasProperty("chRepo")) {
+            maven {
+                url = project.chRepo
+                credentials {
+                    username = project.chUsername
+                    password = project.chPassword
                 }
             }
         }
