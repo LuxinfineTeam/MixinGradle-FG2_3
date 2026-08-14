@@ -227,8 +227,20 @@ public class MixinExtension {
                 }
             }
 
-            
+
             this.applyDefault()
+
+            //Подсовываем ресурсы в класспаз раннеров, чтобы миксины нашли mixins.*.json файлы в resources проекта
+            project.tasks.matching { it.name == 'runClient' || it.name == 'runServer' }.configureEach { runTask ->
+                runTask.doFirst {
+                    // Ensure mixin configs in build/resources/main are accessible
+                    def resourcesDir = project.layout.buildDirectory.dir("resources/main").get().asFile
+                    if (resourcesDir.exists() && runTask.hasProperty('classpath')) {
+                        runTask.classpath += project.files(resourcesDir)
+                        project.logger.info "Added {} to classpath for {}", resourcesDir, runTask.name
+                    }
+                }
+            }
         }
 
         SourceSet.metaClass.getRefMap = {

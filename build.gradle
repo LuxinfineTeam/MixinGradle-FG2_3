@@ -18,9 +18,16 @@ defaultTasks 'build'
 
 group = 'org.spongepowered'
 version = buildVersion + (buildType == 'RELEASE' ? '' : "-$buildType")
-archivesBaseName = 'mixingradle'
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
+base {
+    archivesName = "mixingradle"
+}
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -73,11 +80,11 @@ publishing {
             artifact groovydocJar
 
             groupId = project.group
-            artifactId = project.archivesBaseName
+            artifactId = project.base.archivesName.get()
             version = project.version
 
             pom {
-                name = project.archivesBaseName
+                name = project.base.archivesName.get()
                 packaging = 'jar'
                 description = 'MixinGradle'
                 url = 'http://www.spongepowered.org/'
