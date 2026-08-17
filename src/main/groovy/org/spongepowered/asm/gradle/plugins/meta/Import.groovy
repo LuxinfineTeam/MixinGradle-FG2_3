@@ -31,7 +31,6 @@ import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.Type
-import org.objectweb.asm.tree.AnnotationNode
 
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -120,19 +119,16 @@ class Import {
      * ASM class visitor for scanning the classes for Mixin annotations
      */
     private static class MixinScannerVisitor extends ClassVisitor {
-        
-        /**
-         * Discovered mixin annotation 
-         */
-        AnnotationNode mixin = null
-        
+
         /**
          * Discovered class name
          */
         String name
 
+        List<String> targets = []
+
         MixinScannerVisitor() {
-            super(ASM5)
+            super(ASM9)
         }
 
         @Override
@@ -143,56 +139,62 @@ class Import {
         @Override
         AnnotationVisitor visitAnnotation(String desc, boolean visible) {
             if ("Lorg/spongepowered/asm/mixin/Mixin;".equals(desc)) {
-                return this.mixin = new AnnotationNode(desc)
+                return new MixinAnnotationVisitor(this.targets)
             }
-            super.visitAnnotation(desc, visible)
+            return super.visitAnnotation(desc, visible)
         }
-        
+
         List<String> getTargets() {
-            if (this.mixin == null) {
-                return []
-            }
-            
-            List<String> targets = []
-            List<Type> publicTargets = this.getAnnotationValue("value");
-            List<String> privateTargets = this.getAnnotationValue("targets");
-            
-            if (publicTargets != null) {
-                for (Type type : publicTargets) {
-                    targets += type.getClassName().replace(".", "/")
-                }
-            }
-            
-            if (privateTargets != null) {
-                for (String type : privateTargets) {
-                    targets += type.replace(".", "/")
-                }
-            }
-            
-            return targets
+            return this.targets
         }
-        
-        private <T> T getAnnotationValue(String key) {
-            boolean getNextValue = false
-    
-            if (this.mixin.values == null) {
-                return null
-            }
-    
-            // Keys and value are stored in successive pairs, search for the key
-            // and if found return the following entry
-            for (Object value : this.mixin.values) {
-                if (getNextValue) {
-                    return (T) value
-                }
-                if (value.equals(key)) {
-                    getNextValue = true
-                }
-            }
-    
-            return null
+    }
+
+    /**
+     * ASM annotation visitor for parsing Mixin annotation values
+     */
+    private static class MixinAnnotationVisitor extends AnnotationVisitor {
+
+        private final List<String> targets
+
+        MixinAnnotationVisitor(List<String> targets) {
+            super(ASM5)
+            this.targets = targets
         }
-    
+
+        @Override
+        AnnotationVisitor visitArray(String name) {
+            if ("value".equals(name)) {
+                return new MixinTargetArrayVisitor(this.targets, true)
+            }
+            if ("targets".equals(name)) {
+                return new MixinTargetArrayVisitor(this.targets, false)
+            }
+            return super.visitArray(name)
+        }
+    }
+
+    /**
+     * ASM annotation visitor for parsing array values (value and targets)
+     */
+    private static class MixinTargetArrayVisitor extends AnnotationVisitor {
+
+        private final List<String> targets
+        private final boolean isTypeArray
+
+        MixinTargetArrayVisitor(List<String> targets, boolean isTypeArray) {
+            super(ASM5)
+            this.targets = targets
+            this.isTypeArray = isTypeArray
+        }
+
+        @Override
+        void visit(String name, Object value) {
+            if (this.isTypeArray && value instanceof Type) {
+                this.targets.add(((Type) value).getClassName().replace(".", "/"))
+            } else if (!this.isTypeArray && value instanceof String) {
+                this.targets.add(((String) value).replace(".", "/"))
+            }
+        }
     }
         
 }

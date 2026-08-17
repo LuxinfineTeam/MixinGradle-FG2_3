@@ -5,6 +5,7 @@
 ### Список изменений:
 - Поддержка запуска gradle на JDK 17-21
 - Подгрузка main/resources в класспаз runClient и runServer конфигураций, чтобы миксины загружали mixins.modid.json файлы в IDE
+- Обновление зависимости org.ow2.asm:asm-debug-all:5.0.3 до org.ow2.asm:asm:9.10.1, отказ от tree api, использование ASM9 API вместо ASM5
 
 ### Пример подключения плагина совместно с FG 2.3:
 ```groovy
