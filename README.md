@@ -29,11 +29,7 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
-}
+compileJava { options.release = 8 }
 
 version = "1.0"
 base {
